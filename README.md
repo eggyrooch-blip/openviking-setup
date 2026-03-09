@@ -44,7 +44,7 @@ Linux / Windows 用户请前往官方仓库获取对应安装脚本：
 ## 快速开始
 
 ```bash
-git clone https://github.com/kite/openviking-setup.git
+git clone https://github.com/eggyrooch-blip/openviking-setup.git
 cd openviking-setup
 bash setup-openviking.sh
 ```
@@ -66,7 +66,7 @@ OPENVIKING_VLM_MODEL="Qwen/Qwen2.5-VL-72B-Instruct" \
 bash setup-openviking.sh
 ```
 
-## 脚本做了什么（7 步）
+## 脚本做了什么（8 步）
 
 ```
 Step 1: 创建 Python venv（用 Homebrew Python 3.10+）
@@ -76,6 +76,7 @@ Step 4: 写入 ov.conf（VLM + Embedding 模型配置）
 Step 5: 注入环境变量（openviking.env + plist）
 Step 6: 部署 OpenClaw 插件 + 配置参数
 Step 7: 重启 Gateway + 重新注入 env vars（关键步骤）
+Step 8: 迁移 OpenClaw 原生记忆（可选，检测到数据时询问）
 ```
 
 ## 运行效果
@@ -94,9 +95,28 @@ Step 7: 重启 Gateway + 重新注入 env vars（关键步骤）
 [queue] (healthy)
 ...
 
-[已处理的记忆 — viking://user/memories/]
+[已处理的记忆 — viking://user/default/memories/]
 ...
 ```
+
+## 迁移 OpenClaw 原生记忆
+
+如果你之前使用过 OpenClaw 的原生记忆功能，可以用 `migrate-memory.py` 将历史记忆导入 OpenViking：
+
+```bash
+# 预览（不写入）
+python3 migrate-memory.py
+
+# 迁移默认 agent（main）
+python3 migrate-memory.py --execute
+
+# 迁移所有 agent
+python3 migrate-memory.py --all --execute
+```
+
+**原理：** 脚本读取 `~/.openclaw/memory/{agent}.sqlite` 中的记忆文本，通过 OpenViking Sessions API 让 VLM 提取后写入 `viking://user/default/memories/`。
+
+**注意：** 每条记忆需 VLM 处理（10-60 秒），记忆较多时整体耗时较长。脚本会在安装完成后自动询问是否运行。
 
 ## 常见问题
 

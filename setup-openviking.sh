@@ -129,7 +129,7 @@ ask_yn "确认以上配置，继续安装？" y || { echo "已取消。"; exit 0
 
 # ── Step 1: Python venv ───────────────────────────────────────
 echo ""
-info "[1/7] 创建 Python venv..."
+info "[1/8] 创建 Python venv..."
 if [ -d "$VENV" ]; then
   if ask_yn "  venv 已存在于 $VENV，跳过重建？" y; then
     success "跳过 venv 创建"
@@ -147,7 +147,7 @@ else
 fi
 
 # ── Step 2: Go 环境 ───────────────────────────────────────────
-info "[2/7] 检查 Go 环境（编译 AGFS 库需要）..."
+info "[2/8] 检查 Go 环境（编译 AGFS 库需要）..."
 if ! command -v go &>/dev/null; then
   info "  安装 Go..."
   brew install go
@@ -155,7 +155,7 @@ fi
 success "Go: $(go version)"
 
 # ── Step 3: AGFS 库 ───────────────────────────────────────────
-info "[3/7] 构建 AGFS 库 (libagfsbinding.dylib)..."
+info "[3/8] 构建 AGFS 库 (libagfsbinding.dylib)..."
 if [ -d "$OPENVIKING_REPO" ]; then
   if ask_yn "  $OPENVIKING_REPO 已存在，跳过 clone？" y; then
     success "跳过 clone，使用现有目录"
@@ -176,7 +176,7 @@ fi
 [ -n "$DYLIB" ] && success "AGFS 库: $DYLIB" || warn "未找到 libagfsbinding.dylib，可能需要手动编译"
 
 # ── Step 4: ov.conf ───────────────────────────────────────────
-info "[4/7] 写入 ov.conf..."
+info "[4/8] 写入 ov.conf..."
 if [ -f "$OV_CONF" ]; then
   warn "  $OV_CONF 已存在"
   if ! ask_yn "  覆盖现有配置？" n; then
@@ -216,7 +216,7 @@ OVEOF
 fi
 
 # ── Step 5: 环境变量注入 ──────────────────────────────────────
-info "[5/7] 注入环境变量..."
+info "[5/8] 注入环境变量..."
 cat > "$HOME/.openclaw/openviking.env" << ENVEOF
 OPENVIKING_PYTHON="$VENV/bin/python3"
 OPENVIKING_CONFIG_FILE="$OV_CONF"
@@ -230,7 +230,7 @@ if [ -f "$GATEWAY_PLIST" ]; then
 fi
 
 # ── Step 6: OpenClaw 插件 ─────────────────────────────────────
-info "[6/7] 部署 OpenClaw 插件..."
+info "[6/8] 部署 OpenClaw 插件..."
 mkdir -p "$PLUGIN_DIR"
 cd "$PLUGIN_DIR"
 BASE="https://raw.githubusercontent.com/volcengine/OpenViking/main/examples/openclaw-memory-plugin"
@@ -253,7 +253,7 @@ openclaw config set plugins.allow '["memory-openviking"]' --json
 success "OpenClaw 插件配置完成"
 
 # ── Step 7: 重启 Gateway ──────────────────────────────────────
-info "[7/7] 重启 OpenClaw Gateway..."
+info "[7/8] 重启 OpenClaw Gateway..."
 openclaw gateway stop 2>/dev/null || true
 sleep 2
 openclaw gateway install --force
@@ -266,7 +266,6 @@ if ! command -v ov &>/dev/null; then
   info "安装 ov CLI..."
   mkdir -p "$HOME/.local/bin"
   # 下载安装脚本后再执行，确保 INSTALL_DIR 在 bash 子进程中生效
-  local _ov_installer
   _ov_installer=$(mktemp)
   curl -fsSL https://raw.githubusercontent.com/volcengine/OpenViking/main/crates/ov_cli/install.sh -o "$_ov_installer" \
     && INSTALL_DIR="$HOME/.local/bin" bash "$_ov_installer" \
@@ -279,6 +278,42 @@ fi
 cat > "$OVCLI_CONF" << CLIEOF
 {"url": "http://127.0.0.1:1933", "timeout": 60.0, "output": "table"}
 CLIEOF
+
+# ── Step 8: 原生记忆迁移（可选）─────────────────────────────
+info "[8/8] 原生记忆迁移（可选）..."
+MIGRATE_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/migrate-memory.py"
+MEMORY_DIR="$HOME/.openclaw/memory"
+
+if [ -d "$MEMORY_DIR" ] && ls "$MEMORY_DIR"/*.sqlite &>/dev/null 2>&1; then
+  DB_COUNT=$(ls "$MEMORY_DIR"/*.sqlite 2>/dev/null | wc -l | tr -d ' ')
+  echo ""
+  echo "  检测到 OpenClaw 原生记忆数据库（共 $DB_COUNT 个）："
+  ls "$MEMORY_DIR"/*.sqlite 2>/dev/null | while read f; do echo "    $(basename "$f")"; done
+  echo ""
+  echo "  迁移会将原生记忆内容通过 VLM 提取后写入 OpenViking。"
+  echo "  ⚠️  VLM 处理每条记忆约需 10-60 秒，请耐心等待。"
+  echo ""
+  if [ -f "$MIGRATE_SCRIPT" ]; then
+    if ask_yn "  是否立即迁移原生记忆到 OpenViking？（可跳过，事后手动运行）" y; then
+      info "  运行迁移脚本（dry-run 预览）..."
+      "$VENV/bin/python3" "$MIGRATE_SCRIPT" --all
+      echo ""
+      if ask_yn "  预览无误，确认执行实际迁移？" y; then
+        "$VENV/bin/python3" "$MIGRATE_SCRIPT" --all --execute
+        success "记忆迁移完成"
+      else
+        info "  跳过实际迁移。事后运行: python3 $MIGRATE_SCRIPT --all --execute"
+      fi
+    else
+      info "  跳过迁移。事后运行: python3 $MIGRATE_SCRIPT --all --execute"
+    fi
+  else
+    warn "  migrate-memory.py 不在同目录，跳过迁移"
+    info "  可手动下载: curl -fsSL https://raw.githubusercontent.com/eggyrooch-blip/openviking-setup/main/migrate-memory.py -o migrate-memory.py"
+  fi
+else
+  info "  未检测到原生记忆数据库（$MEMORY_DIR），跳过"
+fi
 
 # ── 状态验收 ──────────────────────────────────────────────────
 echo ""
@@ -297,8 +332,8 @@ if command -v ov &>/dev/null; then
   echo -e "${BOLD}[ov status]${RESET}"
   ov status 2>/dev/null || warn "ov status 失败，服务可能还在启动中"
   echo ""
-  echo -e "${BOLD}[已处理的记忆 — viking://user/memories/]${RESET}"
-  ov ls viking://user/memories/ 2>/dev/null || info "  暂无记忆（首次安装正常）"
+  echo -e "${BOLD}[已处理的记忆 — viking://user/default/memories/]${RESET}"
+  ov ls viking://user/default/memories/ 2>/dev/null || info "  暂无记忆（首次安装正常）"
 else
   warn "ov CLI 未找到，请重启终端后运行: ov status"
 fi
@@ -319,7 +354,7 @@ echo -e "${GREEN}${BOLD}✅ OpenViking × OpenClaw 配置完成！${RESET}"
 echo ""
 echo "  下次查看状态: ov status"
 echo "  搜索记忆:     ov find \"你的搜索词\""
-echo "  浏览记忆:     ov ls viking://user/memories/"
+echo "  浏览记忆:     ov ls viking://user/default/memories/"
 echo "  查看日志:     tail -f $HOME/.openclaw/logs/gateway.log"
 echo ""
 
