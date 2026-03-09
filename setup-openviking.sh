@@ -3,12 +3,19 @@
 # setup-openviking.sh — OpenViking × OpenClaw 一键配置脚本
 #
 # 项目主页: https://github.com/volcengine/OpenViking
-# 本脚本:   https://github.com/kite/openviking-setup
+# 本脚本:   https://github.com/eggyrooch-blip/openviking-setup
 #
-# 适用环境:
-#   - macOS (Apple Silicon 或 Intel)
-#   - Homebrew 已安装
-#   - OpenClaw >= 3.0 已安装
+# ⚠️  仅支持 macOS（Apple Silicon 或 Intel）
+#     Windows 用户请使用官方脚本:
+#     examples/openclaw-memory-plugin/install.ps1
+#     Linux 用户请使用官方脚本:
+#     examples/openclaw-memory-plugin/install.sh
+#
+# 本脚本在官方 install.sh 基础上额外完成:
+#   - 从源码编译 AGFS 库（libagfsbinding.dylib），pip wheel 不含此文件
+#   - 使用 EdgeFN（白山智算）替代默认的火山引擎 ARK，国内直连更稳定
+#   - gateway install --force 后自动重注入 env vars（官方未处理此陷阱）
+#   - 最终输出 ov status + 已处理记忆列表用于验收
 #
 # 脚本边界（你能控制什么）:
 #   ✅ 脚本自动完成: venv 创建、AGFS 库编译、配置文件生成
@@ -227,7 +234,7 @@ info "[6/7] 部署 OpenClaw 插件..."
 mkdir -p "$PLUGIN_DIR"
 cd "$PLUGIN_DIR"
 BASE="https://raw.githubusercontent.com/volcengine/OpenViking/main/examples/openclaw-memory-plugin"
-for f in index.ts config.ts client.ts process-manager.ts memory-ranking.ts text-utils.ts openclaw.plugin.json package.json; do
+for f in index.ts config.ts client.ts process-manager.ts memory-ranking.ts text-utils.ts openclaw.plugin.json package.json tsconfig.json; do
   if [ ! -f "$f" ]; then
     curl -fsSL "$BASE/$f" -o "$f" && echo "    ✓ $f" || warn "    下载失败: $f"
   else
@@ -258,7 +265,13 @@ info "检查 ov CLI..."
 if ! command -v ov &>/dev/null; then
   info "安装 ov CLI..."
   mkdir -p "$HOME/.local/bin"
-  INSTALL_DIR="$HOME/.local/bin" curl -fsSL https://raw.githubusercontent.com/volcengine/OpenViking/main/crates/ov_cli/install.sh | bash || warn "ov CLI 安装失败，可手动安装"
+  # 下载安装脚本后再执行，确保 INSTALL_DIR 在 bash 子进程中生效
+  local _ov_installer
+  _ov_installer=$(mktemp)
+  curl -fsSL https://raw.githubusercontent.com/volcengine/OpenViking/main/crates/ov_cli/install.sh -o "$_ov_installer" \
+    && INSTALL_DIR="$HOME/.local/bin" bash "$_ov_installer" \
+    || warn "ov CLI 安装失败，可手动安装"
+  rm -f "$_ov_installer"
   export PATH="$HOME/.local/bin:$PATH"
 fi
 

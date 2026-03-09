@@ -22,12 +22,22 @@
 
 最容易漏的一步：`openclaw gateway install --force` 会重写 plist 导致 env vars 丢失，脚本会自动在重启后重新注入。
 
-## 适用环境
+## ⚠️ 平台支持
 
-- macOS（Apple Silicon 或 Intel）
+| 平台 | 支持 | 安装方式 |
+|------|------|---------|
+| **macOS** | ✅ | 本脚本 `setup-openviking.sh` |
+| **Linux** | ❌ 本脚本不支持 | 使用官方 `install.sh` |
+| **Windows** | ❌ 本脚本不支持 | 使用官方 `install.ps1` |
+
+Linux / Windows 用户请前往官方仓库获取对应安装脚本：
+[volcengine/OpenViking / examples/openclaw-memory-plugin](https://github.com/volcengine/OpenViking/tree/main/examples/openclaw-memory-plugin)
+
+### macOS 前置条件
+
 - Homebrew 已安装
 - OpenClaw >= 3.0 已安装
-- 需要一个 OpenAI 兼容的 API Key（用于 Embedding 和 VLM）
+- 一个 OpenAI 兼容的 API Key（用于 Embedding 和 VLM）
 
 推荐 API 服务：[EdgeFN 白山智算](https://ai.baishan.com)，同时支持 `BAAI/bge-m3`（Embedding）和 `GLM-4.5V`（VLM），国内直连，OpenAI 兼容。
 
