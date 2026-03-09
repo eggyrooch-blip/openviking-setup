@@ -117,29 +117,6 @@ rm -rf ~/.openviking/venv
 export PATH=/opt/homebrew/bin:$PATH
 ```
 
-## 与 claude-mem 搭配使用（推荐双栈）
-
-[claude-mem](https://github.com/thedotmack/claude-mem) 是另一个热门记忆工具（33k stars），与 OpenViking 定位不同，可以同时使用：
-
-| 维度 | OpenViking（本脚本） | claude-mem |
-|------|---------------------|-----------|
-| 接入层 | OpenClaw memory plugin slot | Claude Code lifecycle hooks |
-| 记录什么 | 用户偏好、技术选型、跨对话积累 | 工具操作日志、文件变更、bug 修复记录 |
-| 适合场景 | 多 Agent 共享记忆 | 单会话操作追溯 |
-| 检索方式 | `viking://` 语义搜索 | MCP 工具 / Web Viewer |
-| 端口 | 1933 | 37777 |
-| 是否冲突 | ✅ 不冲突（不同层） | ✅ 不冲突（不同层） |
-
-**两者分工：**
-- OpenViking 管"你是谁"（偏好、习惯、选型）
-- claude-mem 管"你做了什么"（操作轨迹、会话历史）
-
-**安装 claude-mem（在 Claude Code 中）：**
-```
-/plugin marketplace add thedotmack/claude-mem
-/plugin install claude-mem
-```
-
 ## License
 
 MIT — 本脚本。

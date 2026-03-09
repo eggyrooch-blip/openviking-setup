@@ -23,11 +23,6 @@
 #   🔑 需要你提供:  EdgeFN API Key（或任何 OpenAI 兼容服务的密钥）
 #   ✋ 你的选择权:  覆盖已有配置前会询问、API 端点和模型可自定义
 #
-# 💡 建议搭配 claude-mem（thedotmack/claude-mem）使用：
-#   OpenViking = OpenClaw 多Agent 偏好记忆（本脚本安装）
-#   claude-mem = Claude Code 会话操作记忆（独立安装，不冲突）
-#   脚本末尾会打印 claude-mem 安装指引
-#
 # ============================================================
 
 set -euo pipefail
@@ -328,25 +323,3 @@ echo "  浏览记忆:     ov ls viking://user/memories/"
 echo "  查看日志:     tail -f $HOME/.openclaw/logs/gateway.log"
 echo ""
 
-# ── 💡 推荐搭配：claude-mem ──────────────────────────────────
-echo -e "${BOLD}════════════════════════════════════════════════${RESET}"
-echo -e "${BOLD}  💡 推荐搭配：claude-mem                       ${RESET}"
-echo -e "${BOLD}════════════════════════════════════════════════${RESET}"
-echo ""
-echo "  OpenViking（刚装好）= 多Agent 共享偏好记忆"
-echo "    → 记录你的习惯、技术选型，所有 Agent 都能用"
-echo ""
-echo "  claude-mem（建议补装）= Claude Code 会话操作记忆"
-echo "    → 记录你改了哪些文件、用了哪些工具、修了什么 bug"
-echo "    → 33k stars，有 Web Viewer：http://localhost:37777"
-echo ""
-echo -e "  ${YELLOW}⚠️  安装方式选对，否则会冲突：${RESET}"
-echo "    ❌ curl -fsSL https://install.cmem.ai/openclaw.sh | bash"
-echo "       （OpenClaw Gateway 版，会抢 memory slot → 与 OpenViking 冲突）"
-echo "    ✅ 在 Claude Code 内执行："
-echo "       /plugin marketplace add thedotmack/claude-mem"
-echo "       /plugin install claude-mem"
-echo "       （Claude Code Plugin 版，挂 hooks 层 → 不冲突）"
-echo ""
-echo "  或查看官方文档：https://github.com/thedotmack/claude-mem"
-echo ""
